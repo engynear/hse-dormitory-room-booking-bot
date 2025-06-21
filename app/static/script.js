@@ -200,13 +200,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const start = startTimeInput.value;
         if (!start) return;
         const startMinutes = timeToMinutes(start);
+
+        // If end time is invalid or not set, calculate a default
         if (!endTimeInput.value || timeToMinutes(endTimeInput.value) < startMinutes) {
-             const newEndMinutes = startMinutes + 15;
-             endTimeInput.value = `${String(Math.floor(newEndMinutes / 60) % 24).padStart(2, '0')}:${String(newEndMinutes % 60).padStart(2, '0')}`;
+            let newEndMinutes = startMinutes + 15;
+
+            // Cap at 23:59 (1439 minutes total in a day)
+            if (newEndMinutes >= 1440) {
+                newEndMinutes = 1439;
+            }
+
+            const hours = String(Math.floor(newEndMinutes / 60)).padStart(2, '0');
+            const minutes = String(newEndMinutes % 60).padStart(2, '0');
+            endTimeInput.value = `${hours}:${minutes}`;
         }
-        const maxEndMinutes = startMinutes + 4 * 60;
+
+        // Also cap the max selectable time at 23:59
+        let maxEndMinutes = startMinutes + 4 * 60; // 4 hours max booking
+        if (maxEndMinutes >= 1440) {
+            maxEndMinutes = 1439;
+        }
+        
         endTimeInput.min = start;
-        endTimeInput.max = `${String(Math.floor(maxEndMinutes / 60) % 24).padStart(2, '0')}:${String(maxEndMinutes % 60).padStart(2, '0')}`;
+        const maxHours = String(Math.floor(maxEndMinutes / 60)).padStart(2, '0');
+        const maxMinutes = String(maxEndMinutes % 60).padStart(2, '0');
+        endTimeInput.max = `${maxHours}:${maxMinutes}`;
+        
         updateRoomsVisualState();
         if (state.selectedRoom) {
             const selectedRoomEl = roomMap.querySelector(`.room-block[data-room-name="${state.selectedRoom}"]`);
@@ -365,36 +384,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Initializer ---
     function init() {
-        // --- Set default date and time ---
+        setupEventListeners();
+
+        // Set default date
         dateInput.value = getTodayString();
         dateInput.min = getTodayString();
         
+        // Set default start time
         const now = new Date();
-        let end = new Date(now.getTime() + 15 * 60 * 1000); // +15 minutes
-
-        const formatTime = (date) => {
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${hours}:${minutes}`;
-        };
-
+        const formatTime = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         startTimeInput.value = formatTime(now);
-
-        // If end time crosses midnight, cap it at 23:59 for simplicity.
-        if (end.getDate() !== now.getDate()) {
-            end.setHours(23, 59, 0, 0); 
-        }
         
-        endTimeInput.value = formatTime(end);
+        // Clear end time so it can be auto-populated
+        endTimeInput.value = ''; 
 
-        // --- Setup and Initial Load ---
-        setupEventListeners();
-        
+        // Load initial data
         fetchRooms();
         fetchMyBookings();
-        fetchBookingsByDateAndUpdateUI();
-
-        handleTimeChange();
+        
+        // Fetch bookings for today, and *after* that's done,
+        // calculate the end time and update the UI.
+        // This prevents a race condition where the UI updates before data is loaded.
+        fetchBookingsByDateAndUpdateUI().then(() => {
+            handleTimeChange();
+        });
     }
 
     init();
