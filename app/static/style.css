@@ -272,6 +272,7 @@ hr {
     font-size: 14px;
     z-index: 100;
     pointer-events: none; /* So it doesn't interfere with mouse events on the timeline */
-    white-space: nowrap;
+    max-width: 300px; /* Limit width and allow wrapping */
+    word-wrap: break-word; /* Break long words */
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 } 

@@ -315,18 +315,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         timeline.addEventListener('mousemove', e => {
             const tooltip = timelineTooltip;
+            // Get dimensions every time, as content can change
             const tooltipWidth = tooltip.offsetWidth;
-            const windowWidth = window.innerWidth;
-
-            let left = e.pageX + 15;
+            const tooltipHeight = tooltip.offsetHeight;
             
-            // If tooltip goes off the right edge, position it to the left of the cursor
-            if (left + tooltipWidth + 5 > windowWidth) {
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            // Start with position to the bottom-right of the cursor
+            let left = e.pageX + 15;
+            let top = e.pageY + 15;
+
+            // If it overflows right, move to the left of the cursor
+            if (left + tooltipWidth > scrollX + windowWidth) {
                 left = e.pageX - tooltipWidth - 15;
+            }
+            // If it *still* overflows left (e.g. huge tooltip), clamp to edge
+            if (left < scrollX) {
+                left = scrollX;
+            }
+
+            // If it overflows bottom, move to the top of the cursor
+            if (top + tooltipHeight > scrollY + windowHeight) {
+                top = e.pageY - tooltipHeight - 15;
+            }
+            // If it *still* overflows top, clamp to edge
+            if (top < scrollY) {
+                top = scrollY;
             }
 
             tooltip.style.left = `${left}px`;
-            tooltip.style.top = `${e.pageY + 15}px`;
+            tooltip.style.top = `${top}px`;
         });
         timeline.addEventListener('mouseout', () => {
             timelineTooltip.style.display = 'none';
