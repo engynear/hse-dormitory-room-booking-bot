@@ -45,7 +45,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Time & Date Helpers ---
     function getTodayString() {
         const today = new Date();
-        return today.toISOString().split('T')[0];
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
     function timeToMinutes(time) {
         const [hours, minutes] = time.split(':').map(Number);
