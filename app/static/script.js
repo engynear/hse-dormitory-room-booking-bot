@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderRoomMap();
         } catch (error) {
             showError('Не удалось загрузить список комнат.');
+            throw error;
         }
     }
 
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             myBookingsDiv.innerHTML = `<p>${error.message}</p>`;
             showError(error.message);
+            throw error;
         }
     }
 
@@ -90,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('Не удалось загрузить бронирования на эту дату.');
             throw error; // Propagate error for Promise.all
         }
+        updateTimeline();
     }
 
     async function fetchBookingsByDateAndUpdateUI() {
@@ -398,35 +401,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const inputs = bookingForm.querySelectorAll('input, button');
         inputs.forEach(i => i.disabled = true);
 
-        // --- Load all data in parallel ---
         try {
+            // --- Load all critical data in parallel. If one fails, all fail. ---
             await Promise.all([
                 fetchRooms(),
                 fetchMyBookings(),
                 fetchBookingsByDate(getTodayString())
             ]);
-        } catch (error) {
-            console.error("Failed during initial data load:", error);
-            // Error messages are shown inside individual fetch functions
-        }
-        
-        // --- Set default date and time now that data is loaded ---
-        dateInput.value = getTodayString();
-        dateInput.min = getTodayString();
-        
-        const now = new Date();
-        const formatTime = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-        startTimeInput.value = formatTime(now);
-        
-        // Clear end time so handleTimeChange can populate it
-        endTimeInput.value = ''; 
+            
+            // --- Success! All data is loaded. Now setup the form. ---
+            dateInput.value = getTodayString();
+            dateInput.min = getTodayString();
+            
+            const now = new Date();
+            const formatTime = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            startTimeInput.value = formatTime(now);
+            
+            endTimeInput.value = ''; // Clear end time so handleTimeChange can populate it
 
-        // --- Enable form and update UI ---
-        bookingForm.style.opacity = '1';
-        inputs.forEach(i => i.disabled = false);
-        
-        // Trigger update for end time and visual state
-        handleTimeChange();
+            // --- Enable form and trigger UI update ---
+            inputs.forEach(i => i.disabled = false);
+            bookingForm.style.opacity = '1';
+            
+            handleTimeChange(); // This will calculate end time and update visuals
+
+        } catch (error) {
+            // A critical data load failed. The form will remain disabled.
+            console.error("Fatal: Initial data load failed.", error);
+            // A more specific error was likely shown by the failing function.
+            // We could add a general failure message here if we wanted.
+        }
     }
 
     init();
