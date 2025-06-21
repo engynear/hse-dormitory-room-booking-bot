@@ -365,12 +365,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Initializer ---
     function init() {
+        // --- Set default date and time ---
         dateInput.value = getTodayString();
         dateInput.min = getTodayString();
+        
+        const now = new Date();
+        let end = new Date(now.getTime() + 15 * 60 * 1000); // +15 minutes
+
+        const formatTime = (date) => {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
+        startTimeInput.value = formatTime(now);
+
+        // If end time crosses midnight, cap it at 23:59 for simplicity.
+        if (end.getDate() !== now.getDate()) {
+            end.setHours(23, 59, 0, 0); 
+        }
+        
+        endTimeInput.value = formatTime(end);
+
+        // --- Setup and Initial Load ---
         setupEventListeners();
+        
         fetchRooms();
         fetchMyBookings();
         fetchBookingsByDateAndUpdateUI();
+
+        handleTimeChange();
     }
 
     init();
