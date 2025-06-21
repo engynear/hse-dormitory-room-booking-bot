@@ -82,15 +82,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function fetchBookingsByDateAndUpdateUI() {
-        if (!dateInput.value) return;
+    async function fetchBookingsByDate(date) {
+        if (!date) return;
         try {
-            state.dailyBookings = await fetchApi(`/api/bookings-by-date?date=${dateInput.value}`);
-            updateRoomsVisualState();
-            updateTimeline();
+            state.dailyBookings = await fetchApi(`/api/bookings-by-date?date=${date}`);
         } catch (error) {
             showError('Не удалось загрузить бронирования на эту дату.');
+            throw error; // Propagate error for Promise.all
         }
+    }
+
+    async function fetchBookingsByDateAndUpdateUI() {
+        if (!dateInput.value) return;
+        // The fetch is now separate, this function just orchestrates the update
+        await fetchBookingsByDate(dateInput.value);
+        updateRoomsVisualState();
+        updateTimeline();
     }
     
     // --- Rendering ---
@@ -383,31 +390,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Initializer ---
-    function init() {
+    async function init() {
         setupEventListeners();
 
-        // Set default date
+        // Disable form during load to prevent user input
+        bookingForm.style.opacity = '0.5';
+        const inputs = bookingForm.querySelectorAll('input, button');
+        inputs.forEach(i => i.disabled = true);
+
+        // --- Load all data in parallel ---
+        try {
+            await Promise.all([
+                fetchRooms(),
+                fetchMyBookings(),
+                fetchBookingsByDate(getTodayString())
+            ]);
+        } catch (error) {
+            console.error("Failed during initial data load:", error);
+            // Error messages are shown inside individual fetch functions
+        }
+        
+        // --- Set default date and time now that data is loaded ---
         dateInput.value = getTodayString();
         dateInput.min = getTodayString();
         
-        // Set default start time
         const now = new Date();
         const formatTime = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         startTimeInput.value = formatTime(now);
         
-        // Clear end time so it can be auto-populated
+        // Clear end time so handleTimeChange can populate it
         endTimeInput.value = ''; 
 
-        // Load initial data
-        fetchRooms();
-        fetchMyBookings();
+        // --- Enable form and update UI ---
+        bookingForm.style.opacity = '1';
+        inputs.forEach(i => i.disabled = false);
         
-        // Fetch bookings for today, and *after* that's done,
-        // calculate the end time and update the UI.
-        // This prevents a race condition where the UI updates before data is loaded.
-        fetchBookingsByDateAndUpdateUI().then(() => {
-            handleTimeChange();
-        });
+        // Trigger update for end time and visual state
+        handleTimeChange();
     }
 
     init();
