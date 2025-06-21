@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование комнат</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Бронирование комнат</h1>
+        <form id="booking-form">
+            <div class="form-group">
+                <label for="date-input">1. Выберите дату</label>
+                <input type="date" id="date-input" required>
+            </div>
+
+            <div class="form-group">
+                <label>2. Выберите время</label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="time" id="start-time-input" required step="60">
+                    </div>
+                    <div class="form-group">
+                        <input type="time" id="end-time-input" required step="60">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>3. Выберите комнату</label>
+                <div id="room-map">
+                    <!-- Комнаты будут сгенерированы JS -->
+                </div>
+                <input type="hidden" id="selected-room-input" required>
+            </div>
+            
+            <div id="timeline-container" class="form-group" style="display: none;">
+                <label>Занятость комнаты на выбранную дату</label>
+                <div id="timeline"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="user-room-input">4. Номер вашей комнаты</label>
+                <input type="text" inputmode="numeric" id="user-room-input" placeholder="Например, 501" required pattern="[0-9]{3,4}" title="Введите 3 или 4 цифры">
+            </div>
+            <div class="form-group">
+                <label for="reason-input">5. Причина бронирования (необязательно)</label>
+                <input type="text" id="reason-input" placeholder="Например, подготовка к экзамену">
+            </div>
+            <button type="submit" class="btn">Забронировать</button>
+        </form>
+
+        <hr>
+
+        <h2>Мои бронирования</h2>
+        <div id="my-bookings">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+
+    <div id="timeline-tooltip" class="tooltip"></div>
+
+    <div id="error-popup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn">&times;</span>
+            <p id="error-message"></p>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
